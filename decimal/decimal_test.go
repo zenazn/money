@@ -90,3 +90,44 @@ func TestDiv(t *testing.T) {
 		}
 	}
 }
+
+var stringTests = []struct {
+	a Decimal
+	s string
+}{
+	{FromI64(25000000), "25000000"},
+	{FromI64(-25000000), "-25000000"},
+	{FromI64(8740302187228643401), "8740302187228643401"},
+	{FromI64(-8740302187228643401), "-8740302187228643401"},
+	{Decimal{0x1234, 0x5}, "85961827383486510530565"},
+	{Decimal{0x4b3b4ca85a86c47a, 0x098a223fffffffff}, "99999999999999999999999999999999999999"},
+	{Decimal{0x4b3b4ca85a86c47a, 0x098a224000000000}, "100000000000000000000000000000000000000"},
+	{Decimal{0xb4c4b357a5793b85, 0xf675ddc000000001}, "-99999999999999999999999999999999999999"},
+	{Decimal{0xb4c4b357a5793b85, 0xf675ddc000000000}, "-100000000000000000000000000000000000000"},
+}
+
+func TestString(t *testing.T) {
+	for i, v := range stringTests {
+		if o := v.a.String(); o != v.s {
+			t.Errorf("[%d] %q != %q", i, o, v.s)
+		}
+	}
+}
+
+func BenchmarkString(b *testing.B) {
+	d := Decimal{0x5897e7bd6715a370, 0x17c4aea0fd62d52b}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		d.String()
+	}
+}
+
+func BenchmarkStringSmall(b *testing.B) {
+	d := FromI64(302187286)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		d.String()
+	}
+}

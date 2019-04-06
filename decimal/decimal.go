@@ -138,6 +138,16 @@ func (d Decimal) Div(r Rate) Decimal {
 	return Decimal{t2, t1}
 }
 
+func (d Decimal) divmod(n uint64) (Decimal, uint64) {
+	if d.hi>>63 == 1 {
+		panic("decimal: divmod arg is negative")
+	}
+
+	q2, r2 := bits.Div64(0, d.hi, n)
+	q1, r1 := bits.Div64(r2, d.lo, n)
+	return Decimal{q2, q1}, r1
+}
+
 func (d Decimal) Lt(o Decimal) bool {
 	da, dn := d.signAbs()
 	oa, on := o.signAbs()
@@ -183,4 +193,37 @@ func (d Decimal) Gte(o Decimal) bool {
 
 func (d Decimal) GoString() string {
 	return fmt.Sprintf("Decimal{0x%x, 0x%x}", d.hi, d.lo)
+}
+
+func (d Decimal) String() string {
+	var buf [40]byte
+	k := len(buf) - 1
+	d, s := d.signAbs()
+	var rem uint64
+
+	// I'm sure we can do better than this with a little bit of effort, but
+	// this runs in a couple hundred nanoseconds on my computer, which is
+	// fast enough for me for now.
+	for d.hi != 0 || d.lo != 0 {
+		d, rem = d.divmod(10000000000)
+		for i := 0; i < 10; i++ {
+			buf[k] = '0' + byte(rem%10)
+			k = k - 1
+			rem = rem / 10
+		}
+	}
+
+	for i := 0; i < len(buf); i++ {
+		if buf[i] == 0 || buf[i] == '0' {
+			continue
+		}
+
+		if s {
+			i = i - 1
+			buf[i] = '-'
+		}
+		return string(buf[i:])
+	}
+
+	return "0"
 }
