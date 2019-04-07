@@ -37,9 +37,9 @@ func New(amt decimal.Decimal, ccy currency.Currency) Money {
 	return Money{amt, ccy}
 }
 
-// FromMinorCurrencyUnits returns a Money with the given currency and amount, as
+// FromMinorUnits returns a Money with the given currency and amount, as
 // represented as an integer number of minor currency units in that currency.
-func FromMinorCurrencyUnits(amt int64, ccy currency.Currency) Money {
+func FromMinorUnits(amt int64, ccy currency.Currency) Money {
 	if ccy == nil {
 		panic("money: no currency given")
 	}
@@ -100,6 +100,12 @@ func compat(a, b currency.Currency) error {
 	return fmt.Errorf("money: incompatible currencies %s and %s", as, bs)
 }
 
+// ComparableTo returns true if the two values are comparable (i.e., have the
+// same currency).
+func (m Money) ComparableTo(o Money) bool {
+	return compat(m.ccy, o.ccy) == nil
+}
+
 func (m Money) compatCcy(o Money) currency.Currency {
 	// Operations on currencyless zeroes are "sticky"
 	if m.ccy != nil {
@@ -107,62 +113,6 @@ func (m Money) compatCcy(o Money) currency.Currency {
 	}
 	return o.ccy
 
-}
-
-// AddE adds the two values and returns the result, or an error if the two
-// values were incompatible.
-func (m Money) AddE(o Money) (Money, error) {
-	if err := compat(m.ccy, o.ccy); err != nil {
-		return Money{}, err
-	}
-	return Money{m.amt.Add(o.amt), m.compatCcy(o)}, nil
-}
-
-// Add adds the two values and returns the result. If the two values are
-// incompatible, Add will panic.
-func (m Money) Add(o Money) Money {
-	if err := compat(m.ccy, o.ccy); err != nil {
-		panic(err.Error())
-	}
-	return Money{m.amt.Add(o.amt), m.compatCcy(o)}
-}
-
-// SubE subtracts the second value from the first and returns the result, or an
-// error if the two values are incompatible.
-func (m Money) SubE(o Money) (Money, error) {
-	if err := compat(m.ccy, o.ccy); err != nil {
-		return Money{}, err
-	}
-	return Money{m.amt.Sub(o.amt), m.compatCcy(o)}, nil
-}
-
-// Sub subtracts the second value from the first value and returns the result.
-// If the two values are incompatible, Sub will panic.
-func (m Money) Sub(o Money) Money {
-	if err := compat(m.ccy, o.ccy); err != nil {
-		panic(err.Error())
-	}
-	return Money{m.amt.Sub(o.amt), m.compatCcy(o)}
-}
-
-// Neg negates the value and returns the result.
-func (m Money) Neg() Money {
-	return Money{m.amt.Neg(), m.ccy}
-}
-
-// Mul multiplies the value by the given scalar rate and returns the result.
-func (m Money) Mul(r decimal.Rate) Money {
-	return Money{m.amt.Mul(r), m.ccy}
-}
-
-// Div divides the value by the given scalar rate and returns the result.
-func (m Money) Div(r decimal.Rate) Money {
-	return Money{m.amt.Div(r), m.ccy}
-}
-
-func (m Money) RoundToMinorUnits() Money {
-	// TODO
-	return m
 }
 
 // String renders the amount as a human-readable currency and amount without
