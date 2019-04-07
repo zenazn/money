@@ -1,25 +1,19 @@
+// Package decimal implements a 128-bit, 38-decimal-digit signed integer. With
+// an implicit scaling factor, it is appropriate for use as a fixed-point
+// decimal, for instance to store monetary values.
 package decimal
 
 import (
-	"fmt"
+	"encoding/binary"
 	"math/bits"
 )
 
-// TODO: bankers rounding?
-
+// Decimal is a 128-bit, 38-decimal-digit signed integer.
 type Decimal struct {
 	hi, lo uint64
 }
 
-func Parse(s string) Decimal {
-	// TODO
-	return Decimal{}
-}
-
-func Zero() Decimal {
-	return Decimal{}
-}
-
+// FromI64 returns a Decimal representation of the given int64.
 func FromI64(i int64) Decimal {
 	if i < 0 {
 		return Decimal{^uint64(0), uint64(i)}
@@ -27,18 +21,22 @@ func FromI64(i int64) Decimal {
 	return Decimal{0, uint64(i)}
 }
 
+// Add returns a Decimal that is the sum of its two operands.
 func (d Decimal) Add(o Decimal) Decimal {
 	lo, carry := bits.Add64(d.lo, o.lo, 0)
 	hi, _ := bits.Add64(d.hi, o.hi, carry)
 	return Decimal{hi, lo}
 }
 
+// Sub returns a Decimal that is the result of subtracting its second operand
+// from its first operand.
 func (d Decimal) Sub(o Decimal) Decimal {
 	lo, carry := bits.Sub64(d.lo, o.lo, 0)
 	hi, _ := bits.Sub64(d.hi, o.hi, carry)
 	return Decimal{hi, lo}
 }
 
+// Neg returns the negative of the given Decimal.
 func (d Decimal) Neg() Decimal {
 	lo, carry := bits.Add64(^d.lo, 1, 0)
 	hi, _ := bits.Add64(^d.hi, 0, carry)
@@ -52,6 +50,10 @@ func (d Decimal) signAbs() (Decimal, bool) {
 	return d, false
 }
 
+// Mul returns a Decimal that is the result of multiplying the given Decimal by
+// the given Rate. It performs calculations at full precision, and rounds the
+// fractional component of the result using Bankers Rounding (round-half-even).
+// If the result is larger than can be represented by a Decimal, Mul panics.
 func (d Decimal) Mul(r Rate) Decimal {
 	// We can multiply two's compliment negative numbers without too much
 	// difficulty, but later on we'll need to divide as well, and that's not
@@ -79,8 +81,8 @@ func (d Decimal) Mul(r Rate) Decimal {
 	t2, r2 := bits.Div64(r3, o2, rateBase)
 	t1, r1 := bits.Div64(r2, o1, rateBase)
 
-	// Round 0.5 towards infinity
-	if r1 >= rateBase/2 {
+	// Round 0.5 towards the nearest even number
+	if r1 > rateBase/2 || (r1 == rateBase/2 && t1&1 == 1) {
 		t1, r1 = bits.Add64(t1, 1, 0)
 		t2, r2 = bits.Add64(t2, 0, r1)
 		t3, _ = bits.Add64(t3, 0, r2)
@@ -100,6 +102,11 @@ func (d Decimal) Mul(r Rate) Decimal {
 	return Decimal{t2, t1}
 }
 
+// Div returns a Decimal that is the result of dividing the given Decimal by the
+// given Rate. It performs calculations at full precision, and rounds the
+// fractional component of the result using Bankers Rounding (round-half-even).
+// Div will panic if the given rate is zero, or if the result of the computation
+// is larger than can be represented by a Decimal.
 func (d Decimal) Div(r Rate) Decimal {
 	if r.r == 0 {
 		panic("decimal: div: divide by zero")
@@ -124,8 +131,8 @@ func (d Decimal) Div(r Rate) Decimal {
 	t2, r2 := bits.Div64(r3, o2, ru)
 	t1, r1 := bits.Div64(r2, o1, ru)
 
-	// Round 0.5 towards infinity
-	if r1 >= ru/2 {
+	// Round 0.5 towards the nearest even number
+	if r1 > ru/2 || (r1 == ru/2 && t1&1 == 1) {
 		t1, r1 = bits.Add64(t1, 1, 0)
 		t2, r2 = bits.Add64(t2, 0, r1)
 		t3, _ = bits.Add64(t3, 0, r2)
@@ -155,6 +162,7 @@ func (d Decimal) divmod(n uint64) (Decimal, uint64) {
 	return Decimal{q2, q1}, r1
 }
 
+// Lt returns true if the Decimal argument is less than the given Decimal.
 func (d Decimal) Lt(o Decimal) bool {
 	da, dn := d.signAbs()
 	oa, on := o.signAbs()
@@ -179,6 +187,7 @@ func (d Decimal) Lt(o Decimal) bool {
 	}
 }
 
+// Lte returns true if the Decimal argument is less than or equal to the given Decimal.
 func (d Decimal) Lte(o Decimal) bool {
 	if d == o {
 		return true
@@ -186,22 +195,23 @@ func (d Decimal) Lte(o Decimal) bool {
 	return d.Lt(o)
 }
 
+// Eq returns true if the two Decimal arguments are equal.
 func (d Decimal) Eq(o Decimal) bool {
 	return d == o
 }
 
+// Gt returns true if the Decimal argument is greater than the given Decimal.
 func (d Decimal) Gt(o Decimal) bool {
 	return !d.Lte(o)
 }
 
+// Gte returns true if the Decimal argument is greater than or equal to the
+// given Decimal.
 func (d Decimal) Gte(o Decimal) bool {
 	return !d.Lt(o)
 }
 
-func (d Decimal) GoString() string {
-	return fmt.Sprintf("Decimal{0x%x, 0x%x}", d.hi, d.lo)
-}
-
+// String returns a decimal string representing the given value.
 func (d Decimal) String() string {
 	var buf [40]byte
 	k := len(buf) - 1
@@ -233,4 +243,19 @@ func (d Decimal) String() string {
 	}
 
 	return "0"
+}
+
+// ReadDecimal reads a Decimal, encoded as a 128-bit little-endian value, from
+// the given byte slice.
+func ReadDecimal(buf []byte) Decimal {
+	lo := binary.LittleEndian.Uint64(buf[0:8])
+	hi := binary.LittleEndian.Uint64(buf[8:16])
+	return Decimal{hi, lo}
+}
+
+// Write writes the Decimal as a 128-bit little-endian value to the first 16
+// bytes of the given byte slice.
+func (d Decimal) Write(buf []byte) {
+	binary.LittleEndian.PutUint64(buf[0:8], d.lo)
+	binary.LittleEndian.PutUint64(buf[8:16], d.hi)
 }
