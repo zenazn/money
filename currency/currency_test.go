@@ -11,6 +11,16 @@ func TestSymbol(t *testing.T) {
 	}
 }
 
+func TestUnits(t *testing.T) {
+	u := CAD.Units()
+	if u.MajorUnitScalingFactorExponent != 6 {
+		t.Errorf("scaling factor is %d, not 6", u.MajorUnitScalingFactorExponent)
+	}
+	if u.MinorUnitsInMajorUnitExponent != 2 {
+		t.Errorf("minor units is %d, not 2", u.MinorUnitsInMajorUnitExponent)
+	}
+}
+
 func TestFromISO(t *testing.T) {
 	if c, err := FromISOSymbol("USD"); err != nil || c != USD {
 		t.Errorf("USD is %#v, not %#v?! %v", c, USD, err)
