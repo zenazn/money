@@ -5,11 +5,14 @@ import (
 	"math/bits"
 )
 
+// TODO: bankers rounding?
+
 type Decimal struct {
 	hi, lo uint64
 }
 
 func Parse(s string) Decimal {
+	// TODO
 	return Decimal{}
 }
 
@@ -84,7 +87,7 @@ func (d Decimal) Mul(r Rate) Decimal {
 	}
 
 	if t3 != 0 {
-		panic("mul: overflow")
+		panic("decimal: mul: overflow")
 	}
 
 	// Flip signs if necessary
@@ -98,6 +101,10 @@ func (d Decimal) Mul(r Rate) Decimal {
 }
 
 func (d Decimal) Div(r Rate) Decimal {
+	if r.r == 0 {
+		panic("decimal: div: divide by zero")
+	}
+
 	// I have no idea how to divide negative two's compliment numbers, so
 	// just normalize the signs up front and be done with it.
 	r, rSign := r.signAbs()
@@ -125,7 +132,7 @@ func (d Decimal) Div(r Rate) Decimal {
 	}
 
 	if t3 != 0 {
-		panic("div: overflow")
+		panic("decimal: div: overflow")
 	}
 
 	// Flip signs if necessary
