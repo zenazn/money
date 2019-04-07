@@ -70,7 +70,7 @@ type CurrencyDataFile struct {
 func main() {
 	resp, err := http.Get("https://raw.githubusercontent.com/unicode-cldr/cldr-core/master/supplemental/currencyData.json")
 	if err != nil {
-		fmt.Printf("while downloading currency data from github: %v", err)
+		fmt.Printf("while downloading currency data from github: %v\n", err)
 		os.Exit(2)
 	}
 	defer resp.Body.Close()
@@ -78,13 +78,13 @@ func main() {
 	var cf CurrencyDataFile
 	jd := json.NewDecoder(resp.Body)
 	if err := jd.Decode(&cf); err != nil {
-		fmt.Printf("while interpreting file: %v", err)
+		fmt.Printf("while interpreting file: %v\n", err)
 		os.Exit(2)
 	}
 
 	f, err := os.Create("data.go")
 	if err != nil {
-		fmt.Printf("while opening output file=%q for writing: %v", f.Name(), err)
+		fmt.Printf("while opening output file=%q for writing: %v\n", f.Name(), err)
 		os.Exit(2)
 	}
 
@@ -162,7 +162,7 @@ func main() {
 func w(f *os.File, s string, args ...interface{}) {
 	_, err := fmt.Fprintf(f, s+"\n", args...)
 	if err != nil {
-		fmt.Printf("while writing %q: %v", f.Name(), err)
+		fmt.Printf("while writing %q: %v\n", f.Name(), err)
 		os.Exit(2)
 	}
 }

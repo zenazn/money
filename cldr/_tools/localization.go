@@ -32,7 +32,7 @@ type CurrenciesFile struct {
 
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Printf("usage: %s locale", os.Args[0])
+		fmt.Printf("usage: %s locale\n", os.Args[0])
 		os.Exit(1)
 	}
 	locale := os.Args[1]
@@ -41,7 +41,7 @@ func main() {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Printf("while downloading locale=%q from github: %v", locale, err)
+		fmt.Printf("while downloading locale=%q from github: %v\n", locale, err)
 		os.Exit(2)
 	}
 	defer resp.Body.Close()
@@ -49,14 +49,14 @@ func main() {
 	var cf CurrenciesFile
 	jd := json.NewDecoder(resp.Body)
 	if err := jd.Decode(&cf); err != nil {
-		fmt.Printf("while interpreting file: %v", err)
+		fmt.Printf("while interpreting file: %v\n", err)
 		os.Exit(2)
 	}
 
 	fname := fmt.Sprintf("%s.go", locale)
 	f, err := os.Create(fname)
 	if err != nil {
-		fmt.Printf("while opening output file=%q for writing: %v", fname, err)
+		fmt.Printf("while opening output file=%q for writing: %v\n", fname, err)
 		os.Exit(2)
 	}
 
@@ -90,7 +90,7 @@ func main() {
 func w(f *os.File, s string, args ...interface{}) {
 	_, err := fmt.Fprintf(f, s+"\n", args...)
 	if err != nil {
-		fmt.Printf("while writing %q: %v", f.Name(), err)
+		fmt.Printf("while writing %q: %v\n", f.Name(), err)
 		os.Exit(2)
 	}
 }

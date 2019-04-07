@@ -29,7 +29,7 @@ type currency struct {
 func main() {
 	resp, err := http.Get("https://www.currency-iso.org/dam/downloads/lists/list_one.xml")
 	if err != nil {
-		fmt.Printf("while downloading currency data from ISO: %v", err)
+		fmt.Printf("while downloading currency data from ISO: %v\n", err)
 		os.Exit(2)
 	}
 	defer resp.Body.Close()
@@ -37,13 +37,13 @@ func main() {
 	var isof ISO4217
 	xd := xml.NewDecoder(resp.Body)
 	if err := xd.Decode(&isof); err != nil {
-		fmt.Printf("while interpreting file: %v", err)
+		fmt.Printf("while interpreting file: %v\n", err)
 		os.Exit(2)
 	}
 
 	f, err := os.Create("data.go")
 	if err != nil {
-		fmt.Printf("while opening data.go: %v", err)
+		fmt.Printf("while opening data.go: %v\n", err)
 		os.Exit(2)
 	}
 
@@ -79,7 +79,7 @@ func main() {
 		if e.CurrencyMinorUnits != "N.A." {
 			n, err := strconv.Atoi(e.CurrencyMinorUnits)
 			if err != nil {
-				fmt.Printf("currency %s (%d) unexpected minor units: %v", e.Currency, i, err)
+				fmt.Printf("currency %s (%d) unexpected minor units: %v\n", e.Currency, i, err)
 				os.Exit(2)
 			}
 			munits = n
@@ -95,7 +95,7 @@ func main() {
 func w(f *os.File, s string, args ...interface{}) {
 	_, err := fmt.Fprintf(f, s+"\n", args...)
 	if err != nil {
-		fmt.Printf("while writing %q: %v", f.Name(), err)
+		fmt.Printf("while writing %q: %v\n", f.Name(), err)
 		os.Exit(2)
 	}
 }
