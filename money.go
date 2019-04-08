@@ -57,14 +57,53 @@ func FromMinorUnits(amt int64, ccy currency.Currency) Money {
 	return Money{d.Mul(decimal.NewRate(sf)), ccy}
 }
 
+var ten = decimal.NewRate(10 * 1000000)
+
 // Parse interprets the amount as a floating-point decimal string (using "." to
 // separate the whole part from the fractional part, and without thousands
 // separators or other adornments) and the currency as an ISO 4217 currency
 // code, and returns a Money representing that value, or an error if either the
 // amount or currency fails to parse.
 func Parse(amt, ccy string) (Money, error) {
-	// TODO
-	return Money{}, nil
+	c, err := currency.FromISOSymbol(ccy)
+	if err != nil {
+		return Money{}, err
+	}
+
+	sf := int(c.Units().MajorUnitScalingFactorExponent)
+	d := decimal.Decimal{}
+	dot := -1
+
+	// Classic multiply-by-10-and-add parser. I'm sure we could make this
+	// much faster if we wanted.
+	for i, chr := range amt {
+		if dot >= 0 && i-dot >= sf {
+			return Money{}, fmt.Errorf("money: too precise")
+		}
+
+		if chr == '.' && i != 0 && dot == -1 {
+			dot = i + 1
+			continue
+		} else if chr < '0' || chr > '9' {
+			return Money{}, fmt.Errorf("money: bad char %q at position %d", chr, i)
+		}
+		d = d.Mul(ten).Add(decimal.FromI64(int64(chr - '0')))
+	}
+
+	if dot == len(amt) {
+		// If we saw a dot at the very end, that's malformed
+		return Money{}, fmt.Errorf("money: trailing dot")
+	} else if dot == -1 {
+		// If we never saw a dot, that's equivalent to it being at the end
+		dot = len(amt)
+	}
+
+	// Scale out to the scale factor
+	for i := len(amt) - dot; i < sf; i++ {
+		d = d.Mul(ten)
+	}
+
+	return Money{d, c}, nil
 }
 
 // Amount returns a decimal integer number of minimum-representable-units of the

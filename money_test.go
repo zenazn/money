@@ -7,6 +7,14 @@ import (
 	"github.com/zenazn/money/decimal"
 )
 
+func mustparse(amt, ccy string) Money {
+	m, err := Parse(amt, ccy)
+	if err != nil {
+		panic(err)
+	}
+	return m
+}
+
 var constructorTests = []struct {
 	v   Money
 	amt string
@@ -17,6 +25,9 @@ var constructorTests = []struct {
 	{New(decimal.FromI64(42), currency.EUR), "42", currency.EUR},
 	{FromMinorUnits(123, currency.USD), "1230000", currency.USD},
 	{FromMinorUnits(123, currency.JPY), "123000000", currency.JPY},
+	{mustparse("1.23", "USD"), "1230000", currency.USD},
+	{mustparse("0.000023", "USD"), "23", currency.USD},
+	{mustparse("1234", "USD"), "1234000000", currency.USD},
 }
 
 func TestConstructors(t *testing.T) {
@@ -27,6 +38,37 @@ func TestConstructors(t *testing.T) {
 		if c := test.v.ccy; c != test.ccy {
 			t.Errorf("[%d] amount expected %v got %v", i, test.ccy, c)
 		}
+	}
+}
+
+var parseFailureTests = []string{
+	".123",
+	"123.",
+	"123.4.2",
+	"123,45",
+	"orange",
+	"12.3456789",
+}
+
+func TestParseFailures(t *testing.T) {
+	for i, s := range parseFailureTests {
+		if v, err := Parse(s, "USD"); err == nil {
+			t.Errorf("[%d] unexpectedly passed: %v", i, v)
+		}
+	}
+}
+
+func BenchmarkParse(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		Parse("1234.56", "USD")
+	}
+}
+
+func BenchmarkParseLarge(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		Parse("26499352303014264292828635027055.993969", "USD")
 	}
 }
 
