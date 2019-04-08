@@ -26,7 +26,10 @@ func (b bitcoin) Symbol() string {
 	return "XBT"
 }
 func (b bitcoin) Units() currency.Units {
-	return currency.Units{8, 8}
+	return currency.Units{
+		MinorUnitsInMajorUnitExponent:  8,
+		MajorUnitScalingFactorExponent: 8,
+	}
 }
 
 type precise uint8
@@ -35,7 +38,10 @@ func (p precise) Symbol() string {
 	return fmt.Sprintf("XPC[%d]", p)
 }
 func (p precise) Units() currency.Units {
-	return currency.Units{2, uint8(p)}
+	return currency.Units{
+		MinorUnitsInMajorUnitExponent:  2,
+		MajorUnitScalingFactorExponent: uint8(p),
+	}
 }
 
 func btc(sat int64) Money {

@@ -56,8 +56,8 @@ func TestBasic(t *testing.T) {
 
 type fakeUSD struct{}
 
-func (f fakeUSD) Symbol() string        { return "USD" }
-func (f fakeUSD) Units() currency.Units { return currency.Units{2, 6} }
+func (f fakeUSD) Symbol() string        { return currency.USD.Symbol() }
+func (f fakeUSD) Units() currency.Units { return currency.USD.Units() }
 
 func TestComparableTo(t *testing.T) {
 	m1 := FromMinorUnits(123, currency.USD)
