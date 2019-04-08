@@ -9,8 +9,8 @@ type Rate struct {
 }
 
 // NewRate returns a Rate with the given number of parts-per-million.
-func NewRate(ppm int) Rate {
-	return Rate{int64(ppm)}
+func NewRate(ppm int64) Rate {
+	return Rate{ppm}
 }
 
 // Add returns a new Rate that is the sum of the two arguments.

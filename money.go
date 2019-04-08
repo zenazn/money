@@ -43,14 +43,18 @@ func FromMinorUnits(amt int64, ccy currency.Currency) Money {
 	if ccy == nil {
 		panic("money: no currency given")
 	}
-	sf := 1000000
+	sf := int64(1000000)
 	u := ccy.Units()
 	sfe := int(u.MajorUnitScalingFactorExponent - u.MinorUnitsInMajorUnitExponent)
+	d := decimal.FromI64(amt)
 	for i := 0; i < sfe; i++ {
 		sf = sf * 10
+		if sf > 1000000000000000 {
+			d = d.Mul(decimal.NewRate(sf))
+			sf = 1000000
+		}
 	}
-	d := decimal.FromI64(amt).Mul(decimal.NewRate(sf))
-	return Money{d, ccy}
+	return Money{d.Mul(decimal.NewRate(sf)), ccy}
 }
 
 // Parse interprets the amount as a floating-point decimal string (using "." to
